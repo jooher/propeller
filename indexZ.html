@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<title>Propeller</title>
+		<link rel="stylesheet" href="styles.css"/>
+		<style>
+			body {margin: 0;width: 100%;}
+		</style>
+	</head>
+	<body>
+	
+	<div id="left">
+		<form id="params">
+		
+			<h3>Винт</h3>
+			<input type="number" label="Шаг" name="" value=""/>
+			<input type="number" label="Атака" name="" value=""/>
+			<input type="number" label="" name="" value=""/>
+			<input type="number" label="" name="" value=""/>
+			
+			<h3>Лопасть</h3>
+			<input type="number" label="Радиус, мм" name="length" value="650"/>
+			<input type="number" label="Ширина, мм" name="width" value="650"/>
+			<input type="number" label="Толщина у корня, мм" name="root" value="22"/>
+			<input type="number" label="Толщина у конца, мм" name="tip" value="3"/>
+			
+			<h3>Хаб</h3>
+			<input type="number" label="Галтель, %" name="" value=""/>
+			<input type="number" label="Высота, мм" name="" value=""/>
+			<input type="number" label="Радиус, мм" name="" value=""/>
+			<input type="number" label="" name="" value=""/>
+			
+			<input type="submit" value="update"/>
+		</form>
+	</div>
+	
+	<div id="middle">
+		<div id="view" style="width:600px; height:600px"></div>
+	</div>
+	
+	<div id="right">
+	
+		<svg id="svg" width="200" height="100" style="border:1px solid lightgray" viewBox="-60 -50 150 50">
+			<polygon stroke="red" stroke-width=".2" fill="transparent"/>
+		</svg>
+ 	
+		<textarea id="clinch"></textarea>
+		
+		<textarea id="front"></textarea>
+		
+		<textarea id="back"></textarea>
+	
+	</div>
+	
+
+	
+<script src="https://threejs.org/build/three.js" _type="module"></script>
+<script src="sections.js"></script>
+<script src="do.js"></script>
+
+<script>
+
+three(el("view"));
+plan(el("svg"));
+for(const i in gcode)el(i).value=gcode[i];
+
+</script>
+
+
+		
+	</body>
+
+
+</html>

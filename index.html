@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<title>My first three.js app</title>
+		<style>
+			body { margin: 0; }
+		</style>
+	</head>
+	<body>
+	
+	<div id="view" style="width:600px; height:600px"></div>
+	
+	<div>
+	<form id="params">
+		<input name="length" type="number">
+	</form>
+	
+	<textarea id="gcode">
+	</textarea>
+	
+	</div>
+	
+	
+	
+
+	
+<script src="https://threejs.org/build/three.js" _type="module"></script>
+<script src="sections.js"></script>
+<script>
+
+
+const
+
+hubShare = .2, // hub vs blade
+hubHeight = 12,
+hubRadius = 60,
+hubR2 = hubRadius*hubRadius,
+	
+
+morph = p =>{
+		const 
+			x = p.x,
+			z = p.z,
+			
+			hz = Math.sqrt( hubR2 - x*x ),
+			dz = z - hz,
+			dy = hubHeight - p.y,
+			r = (dz*dz + dy*dy)/dy/2,
+			a = Math.asin(dz/r),
+			y = p.y + r;
+			
+		return {x,y,z,r,a};
+},
+
+
+three = target => {
+			
+	const	
+
+	lineMaterial = new THREE.LineBasicMaterial( { color: 0x0000ff } ),
+	phongMaterial = new THREE.MeshPhongMaterial( { color: 0x666688 } ),
+
+	// aCube = size => new THREE.Mesh( new THREE.BoxGeometry( size, size, size ), phongMaterial ),
+
+	fromPoints = {
+
+		fromBeziers	: (points,n) => Array
+				.from({length:points.length/3})
+				.map( (v,i) => 
+					new THREE.CubicBezierCurve3( ...points.slice(i*3,i*3+4).map( p => new THREE.Vector3( ...p )) ).getPoints(n||5) 
+			).flat(),
+
+		fromSpline	: (points,n) => 
+				new THREE.SplineCurve(points.map ( p => new THREE.Vector2(...p)) ).getPoints(n||20).map( ([x,y],i) => new THREE.Vector3(x,y,points[0][2]))
+
+	}.fromBeziers,
+
+	longitudal = (a,b) => 
+		a.map( (p,i) => [ new THREE.Vector3(...p), new THREE.Vector3(...b[i])] ),
+
+
+	hubL = p =>[
+		p,
+		new THREE.Vector3(
+			p.x,
+			hubHeight,
+			Math.sqrt(hubR2-p.x*p.x)
+		)
+	],
+
+	hubR = p => {
+			const {x,y,z,r,a} = morph(p),			
+				points = new THREE.EllipseCurve( z, y, r, r, 3*Math.PI/2-a, 3*Math.PI/2).getPoints();
+				
+			return points.map( p => new THREE.Vector3(x,p.y,p.x) );
+
+	},
+
+	aPropeller = setup => {
+
+		const 
+			bladeShare = 1.0 - hubShare,
+			count = 20,
+			percents = Array.from({length:count}).map((v,i)=>hubShare+(i+1)*bladeShare/count),
+			section = propeller(setup||{}),
+			
+			model = new THREE.Group(),
+			blade = new THREE.Group(),
+			hub	= new THREE.Group();
+
+		//lat
+		blade.add( ...percents.map( percent => new THREE.LineLoop( 
+			new THREE.BufferGeometry().setFromPoints(fromPoints(section(percent)))
+			,lineMaterial
+		)));
+
+		
+		//lon
+		blade.add( 
+			...longitudal(fromPoints(section(hubShare)),fromPoints((section(1))))
+			.map( l =>
+				new THREE.Line(
+					new THREE.BufferGeometry().setFromPoints(l)
+					,lineMaterial
+				)
+			)
+		);
+		
+		//hub
+		blade.add(...fromPoints(section(hubShare))
+			.map( p =>  new THREE.Line(
+				new THREE.BufferGeometry().setFromPoints(hubR(p))
+				,lineMaterial
+			))
+		);
+		
+		model.add(
+			hub,
+			blade,
+			blade.clone()
+		);
+		
+		blade.rotation.y+=Math.PI;
+		
+		return model;
+		
+	};
+			
+	const
+		scene = new THREE.Scene(),
+		renderer = new THREE.WebGLRenderer(),
+		observer = new THREE.Group(),
+		
+		width = target.clientWidth,
+		height = target.clientHeight
+		camera = new THREE.PerspectiveCamera( 75, width / height, 0.1, 100000 );
+		
+	// lights
+	const
+		ambLight = new THREE.HemisphereLight( 0xaaaaff, 0x002200, .75 ),
+		dirLight = new THREE.DirectionalLight( 0xffffff, 0.75 ),
+		aProp = aPropeller();
+
+	renderer.setSize( width, height );
+	target.appendChild( renderer.domElement );
+
+
+
+	camera.position.set( 0, 0, 1000 );
+	camera.lookAt( 0, 0, 0 );
+
+	dirLight.position.set( 50, 50, 100 );
+	dirLight.lookAt( 0, 0, 0 );
+
+	observer.add(camera,dirLight);
+
+	scene.add( 
+		aProp,
+		ambLight,
+		observer
+	);
+
+	/*
+	function animate() {
+		requestAnimationFrame( animate );
+	}
+	animate();
+	*/
+
+	renderer.render( scene, camera );
+
+
+	window.addEventListener("mousemove", e => {
+		if (!e.buttons) return;
+		aProp.rotation.y += e.movementX*0.005;
+		aProp.rotation.x += e.movementY*0.005;
+		renderer.render( scene, camera );
+	});
+
+	window.addEventListener("wheel", e => {
+		camera.zoom += camera.zoom * e.deltaY*.0005 ;
+		camera.updateProjectionMatrix();
+		renderer.render( scene, camera );
+	});
+
+};
+
+
+three(document.getElementById("view"));
+
+		</script>
+		
+	</body>
+
+
+<script>
+
+const gcode = params => {
+
+	const clearance = 2, //raw pass clearance
+		ballR = 4,	//mill ball radius
+		ballRC = ballR+clearance; 
+		
+	const xyz = (p,ofs) => "X"+p.x+"Y"+p.y+"Z"+(p.z+ofs)+"\n",
+		arc = ({x,y,z,r,a,hy,hz}, ofs) => `G18G1X${z}Y${y}G2X${hz}Y${hy}R${r}`,
+
+		longitudal = (a,b) => a.map ((p,i)=> "G1"+
+			xyz(a[i], ballRC) + xyz(b[i], ballRC) + xyz(a[i], ballR) + xyz(b[i], ballR)
+		),
+
+		hub = a => a.map( p => {
+			const c = arc
+		
+			"G2"
+		})
+
+}
+
+</script>
+
+</html>

@@ -1,38 +1,44 @@
 <!doctype html>
 <html lang="en">
   <head>
-    <title>WebGL Demo</title>
+    <title>Propeller</title>
     <meta charset="utf-8">
     <!-- link rel="stylesheet" href="./webgl.css" type="text/css"-->
-		
-		<style>
-			canvas {
-				border: 2px solid red;
-				background-color: gray;
-			}
-				video {
-				display: none;
-			}
-		</style>
+	<style>
+		canvas {
+			border: 2px solid red;
+			background-color: gray;
+		}
+	</style>
+	
+	<script src="sections.js"></script>
 		
   </head>
 
   <body>
-    <canvas id="glcanvas" width="640" height="480"></canvas>
+  
+    <svg id="svg" width="600" height="400" style="border:1px solid lightgray" viewBox="-50 -50 100 100">
+	<path stroke="red" stroke-width=".2" fill="transparent"/>
+    </svg>
+    
   </body>
 
   <script>
-	
-	(()=>{
-	
-		const
-			canvas = document.querySelector('#glcanvas'),
-			gl = canvas.getContext('webgl'); //||alert('Unable to initialize WebGL. Your browser or machine may not support it.');
 
-		gl.clearColor(1, 0.5, 0.5, 3);
-		gl.clear(gl.COLOR_BUFFER_BIT);
-		
-	})();
+const 
+	el = id => document.getElementById(id),
+	svg = el("svg"),
+	proto = svg.removeChild(svg.firstElementChild),
+	xy = ([x,y,z]) => x+" "+y,
+	
+	prop = propeller({});
+
+"12 25 50 75 100".split(" ").map( percent => {
+	const	section = prop(percent/100),
+		shape = proto.cloneNode();
+	shape.setAttribute("d", "M "+ xy(section.shift()) + " C "+section.map( xy ).join(" ")); //
+	return svg.appendChild(shape);
+} );
 	
 	
   </script>

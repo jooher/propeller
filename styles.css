@@ -1,0 +1,28 @@
+body{
+	display:flex;
+}
+
+div#right {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+textarea#gcode {
+  width: 99%;
+  height: 100%;
+  border: none;
+}
+
+input[type="number"] {
+  display: block;
+  width: 5em;
+  margin: .5em;
+  text-align: right;
+}
+
+#right>textarea {
+  flex: 1;
+  white-space: pre;
+  margin: 1em 1em 0 1em;
+}
